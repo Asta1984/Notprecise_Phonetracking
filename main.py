@@ -1,34 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 import os
-from dotenv import load_dotenv
-import logging
-from services.tracking import PhoneTracker
+from .models.schemas import TrackingResponse, PhoneNumberRequest
+from .services.tracking import PhoneTracker 
+import logger
 
-# Load environment variables
-load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+tracker = PhoneTracker()
 
 app = FastAPI(title="Phone Tracker API")
 
 
 @app.post("/track", response_model=TrackingResponse)
 async def track_phone_number(request: PhoneNumberRequest):
-    """
-    Track phone number location, service provider, and generate map
-    
-    Args:
-        request: PhoneNumberRequest with phone_number field
-        
-    Returns:
-        TrackingResponse with location, coordinates, and map URL
-        
-    Raises:
-        HTTPException: 400 for invalid input, 500 for server errors
-    """
     try:
         if not tracker:
             raise HTTPException(

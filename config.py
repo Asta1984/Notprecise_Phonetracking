@@ -1,4 +1,15 @@
-# Initialize PhoneTracker
+from dotenv import load_dotenv
+import os
+import logging
+from services.tracking import PhoneTracker
+
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 try:
     OPENCAGE_API_KEY = os.getenv("OPENCAGE_API_KEY")
     if not OPENCAGE_API_KEY:
