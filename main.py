@@ -3,7 +3,10 @@ from fastapi.responses import FileResponse
 import os
 from .models.schemas import TrackingResponse, PhoneNumberRequest
 from .services.tracking import PhoneTracker 
-import logger
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 tracker = PhoneTracker()
