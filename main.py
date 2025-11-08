@@ -30,58 +30,18 @@ async def startup_event():
 
 @app.post("/track", response_model=TrackingResponse)
 async def track_phone_number(request: PhoneNumberRequest):
-    """
-    Track phone number location, service provider, and generate map
+    result = tracker.track(request.phone_number)
+    return TrackingResponse(
+        phone_number=result['phone_number'],
+        location=result['location'],
+        service_provider=result['service_provider'],
+        latitude=result['latitude'],
+        longitude=result['longitude'],
+        map_url=f"/map/{result['map_id']}"
+    )
     
-    Args:
-        request: PhoneNumberRequest with phone_number field
-        
-    Returns:
-        TrackingResponse with location, coordinates, and map URL
-        
-    Raises:
-        HTTPException: 400 for invalid input, 500 for server errors
-    """
-    try:
-        if not tracker:
-            raise HTTPException(
-                status_code=500, 
-                detail="Tracking service unavailable"
-            )
-        
-        # Execute tracking
-        result = tracker.track(request.phone_number)
-        
-        return TrackingResponse(
-            phone_number=result['phone_number'],
-            location=result['location'],
-            service_provider=result['service_provider'],
-            latitude=result['latitude'],
-            longitude=result['longitude'],
-            map_url=f"/map/{result['map_id']}"
-        )
-    
-    except ValueError as e:
-        logger.warning(f"Validation error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Tracking error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
 @app.get("/map/{map_id}")
 async def get_map(map_id: str):
-    """
-    Retrieve generated map by ID
-    
-    Args:
-        map_id: Map identifier in format 'country_code_number'
-        
-    Returns:
-        HTML file response with Folium map
-        
-    Raises:
-        HTTPException: 404 if map not found
-    """
     try:
         map_file = os.path.join(config.MAPS_DIR, f"map_{map_id}.html")
         
@@ -124,7 +84,6 @@ async def root():
         "description": "Track phone numbers and visualize their locations on maps",
         "endpoints": {
             "POST /track": "Track phone number and get location data",
-            "GET /map/{map_id}": "Retrieve generated map",
             "GET /health": "Health check endpoint",
             "GET /docs": "Interactive API documentation (Swagger UI)",
             "GET /redoc": "Alternative API documentation"
