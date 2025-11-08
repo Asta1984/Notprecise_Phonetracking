@@ -1,7 +1,3 @@
-import os
-from dotenv import load_dotenv
+from .schemas import PhoneNumberRequest, TrackingResponse
 
-load_dotenv()
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
+__all__ = ['PhoneNumberRequest', 'TrackingResponse']

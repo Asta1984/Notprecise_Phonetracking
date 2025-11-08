@@ -12,22 +12,31 @@ logger = logging.getLogger(__name__)
 class PhoneTracker:
     """Core phone tracking functionality"""
     
-    def __init__(self, opencage_api_key: str):
+    def __init__(self, opencage_api_key: str = None):
         """
         Initialize tracker with OpenCage API key
         
         Args:
-            opencage_api_key: OpenCage Geocoding API key
+            opencage_api_key: OpenCage Geocoding API key. If not provided, reads from environment
             
         Raises:
-            ValueError: If API key is not provided
+            ValueError: If API key is not provided or invalid
         """
         if not opencage_api_key:
-            raise ValueError("OPENCAGE_API_KEY is required")
+            from dotenv import load_dotenv
+            load_dotenv()
+            opencage_api_key = os.getenv("OPENCAGE_API_KEY")
         
-        self.geocoder_instance = OpenCageGeocode(opencage_api_key)
-        self.maps_dir = "maps"
-        os.makedirs(self.maps_dir, exist_ok=True)
+        if not opencage_api_key:
+            raise ValueError("OPENCAGE_API_KEY is required. Set it in .env file or pass as argument")
+        
+        try:
+            self.geocoder_instance = OpenCageGeocode(opencage_api_key)
+            self.maps_dir = "maps"
+            os.makedirs(self.maps_dir, exist_ok=True)
+            logger.info("PhoneTracker initialized successfully")
+        except Exception as e:
+            raise ValueError(f"Failed to initialize OpenCage Geocoder: {str(e)}")
     
     def parse_and_validate(self, phone_number: str) -> phonenumbers.PhoneNumber:
         """

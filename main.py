@@ -1,21 +1,47 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 import os
-from .models.schemas import TrackingResponse, PhoneNumberRequest
-from .services.tracking import PhoneTracker 
 import logging
+from models.schemas import TrackingResponse, PhoneNumberRequest
+from services.tracking import PhoneTracker
+import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-tracker = PhoneTracker()
-
 app = FastAPI(title="Phone Tracker API")
 
+# Initialize tracker at startup
+tracker = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize tracker on application startup"""
+    global tracker
+    try:
+        if not config.OPENCAGE_API_KEY:
+            raise ValueError("OPENCAGE_API_KEY not found in environment variables")
+        
+        tracker = PhoneTracker(config.OPENCAGE_API_KEY)
+        logger.info("PhoneTracker initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize PhoneTracker: {e}")
+        tracker = None
 
 @app.post("/track", response_model=TrackingResponse)
 async def track_phone_number(request: PhoneNumberRequest):
+    """
+    Track phone number location, service provider, and generate map
+    
+    Args:
+        request: PhoneNumberRequest with phone_number field
+        
+    Returns:
+        TrackingResponse with location, coordinates, and map URL
+        
+    Raises:
+        HTTPException: 400 for invalid input, 500 for server errors
+    """
     try:
         if not tracker:
             raise HTTPException(
@@ -57,7 +83,7 @@ async def get_map(map_id: str):
         HTTPException: 404 if map not found
     """
     try:
-        map_file = f"maps/map_{map_id}.html"
+        map_file = os.path.join(config.MAPS_DIR, f"map_{map_id}.html")
         
         if not os.path.exists(map_file):
             raise HTTPException(status_code=404, detail="Map not found")
@@ -107,4 +133,9 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app,
+        host=config.API_HOST,
+        port=config.API_PORT,
+        reload=config.API_RELOAD
+    )
